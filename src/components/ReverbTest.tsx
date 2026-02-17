@@ -106,8 +106,11 @@ export function ReverbTest() {
       Notification.permission === 'granted'
     ) {
       const lastMessage = messages[messages.length - 1];
+      const bodyText = typeof lastMessage.message === 'string' 
+        ? lastMessage.message 
+        : JSON.stringify(lastMessage.message || lastMessage);
       new Notification('New Message', {
-        body: lastMessage.message || JSON.stringify(lastMessage),
+        body: bodyText,
       });
     }
   }, [messages]);

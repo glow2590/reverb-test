@@ -38,7 +38,7 @@ export function useReverb({
   const [error, setError] = useState<string | null>(null);
 
   const pusherRef = useRef<Pusher | null>(null);
-    const channelRef = useRef<Channel | null>(null);
+  const channelRef = useRef<Channel | null>(null);
 
   // Enable Pusher logging in debug mode
   if (config.debug) {
@@ -139,7 +139,7 @@ export function useReverb({
     channel.bind_global((eventName: string, data: ChannelMessage) => {
       console.log(`Event: ${eventName}`, data);
     });
-  }, [channelName, initializePusher]);
+  }, [channelName, initializePusher, jwtToken, rAuthToken]);
 
   /**
    * Unsubscribe from channel
