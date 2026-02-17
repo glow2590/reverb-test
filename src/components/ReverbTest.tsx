@@ -67,6 +67,7 @@ export function ReverbTest() {
     user,
     login,
     logout,
+    generateRAuthToken,
     loadStoredTokens,
   } = useLogin();
 
@@ -87,8 +88,8 @@ export function ReverbTest() {
   } = useReverb({
     config: reverbConfig,
     jwtToken: jwtToken || '',
-    rAuthToken: rAuthToken || '',
     channelName,
+    generateRAuthToken,
   });
 
   // Request notification permission

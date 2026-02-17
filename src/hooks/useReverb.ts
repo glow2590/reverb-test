@@ -6,8 +6,8 @@ import { getAuthHeaders } from '../config/reverb';
 interface UseReverbOptions {
   config: ReverbConfig;
   jwtToken: string;
-  rAuthToken: string;
   channelName: string;
+  generateRAuthToken: () => Promise<string | null>;
 }
 
 interface UseReverbReturn {
@@ -26,8 +26,8 @@ interface UseReverbReturn {
 export function useReverb({
   config,
   jwtToken,
-  rAuthToken,
   channelName,
+  generateRAuthToken,
 }: UseReverbOptions): UseReverbReturn {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [channelState, setChannelState] = useState<ChannelState>({
@@ -48,13 +48,13 @@ export function useReverb({
   /**
    * Initialize Pusher connection
    */
-  const initializePusher = useCallback(() => {
-    if (!jwtToken || !rAuthToken) {
-      setError('JWT Token and R-Auth token are required');
+  const initializePusher = useCallback((token: string) => {
+    if (!jwtToken) {
+      setError('JWT Token is required');
       return null;
     }
 
-    const authHeaders: AuthHeaders = getAuthHeaders(jwtToken, rAuthToken);
+    const authHeaders: AuthHeaders = getAuthHeaders(jwtToken, token);
 
     const pusherOptions = {
       wsHost: config.host,
@@ -94,17 +94,27 @@ export function useReverb({
     });
 
     return pusher;
-  }, [config, jwtToken, rAuthToken]);
+  }, [config, jwtToken]);
 
   /**
    * Subscribe to channel
    */
-  const subscribe = useCallback(() => {
-    if (!pusherRef.current) {
-      const pusher = initializePusher();
-      if (!pusher) return;
-      pusherRef.current = pusher;
+  const subscribe = useCallback(async () => {
+    const newRAuthToken = await generateRAuthToken();
+    if (!newRAuthToken) {
+      setError('Failed to generate new R-Auth token for subscription.');
+      return;
     }
+
+    if (pusherRef.current) {
+      pusherRef.current.disconnect();
+    }
+
+    const pusher = initializePusher(newRAuthToken);
+    if (!pusher) {
+      return; // Error is set inside initializePusher
+    }
+    pusherRef.current = pusher;
 
     const channel = pusherRef.current.subscribe(`private-${channelName}`);
     channelRef.current = channel;
@@ -139,7 +149,7 @@ export function useReverb({
     channel.bind_global((eventName: string, data: ChannelMessage) => {
       console.log(`Event: ${eventName}`, data);
     });
-  }, [channelName, initializePusher, jwtToken, rAuthToken]);
+  }, [channelName, initializePusher, generateRAuthToken]);
 
   /**
    * Unsubscribe from channel
@@ -161,14 +171,25 @@ export function useReverb({
    * Reconnect to Reverb
    */
   const reconnect = useCallback(() => {
-    unsubscribe();
+    // Disconnect and clear refs
+    if (channelRef.current) {
+      channelRef.current.unbind_all();
+      channelRef.current.unsubscribe();
+      channelRef.current = null;
+    }
     if (pusherRef.current) {
       pusherRef.current.disconnect();
       pusherRef.current = null;
     }
+
+    // Reset state and attempt to subscribe again
     setConnectionStatus('disconnected');
-    setTimeout(() => subscribe(), 500);
-  }, [subscribe, unsubscribe]);
+    setChannelState({ name: channelName, subscribed: false });
+    setError(null);
+
+    // The subscribe function now handles token generation and connection
+    subscribe();
+  }, [subscribe, channelName]);
 
   // Cleanup on unmount
   useEffect(() => {

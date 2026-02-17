@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { API_BASE_URL, STORAGE_KEYS, PREDEFINED_USERS, DEFAULT_PASSWORD } from '../config/reverb';
+import { getRAuthToken as getLocalRAuthToken } from '../services/api/auth/utils/getRAuthToken';
+import { API_BASE_URL, STORAGE_KEYS, PREDEFINED_USERS } from '../config/reverb';
 
 interface LoginResponse {
   data: {
@@ -13,15 +14,6 @@ interface LoginResponse {
   };
 }
 
-interface RAuthResponse {
-  token: string;
-  raw_data?: {
-    device_identifier: string;
-    sn: string;
-    timestamp: number;
-    expires_in: number;
-  };
-}
 
 interface UseLoginReturn {
   isLoading: boolean;
@@ -65,15 +57,11 @@ export function useLogin(): UseLoginReturn {
    */
   const generateRAuthToken = useCallback(async (): Promise<string | null> => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/admin/rauth/test/encode?device_identifier=12345678910&client_type=web&sn=12345&is_r_auth_enabled=0`
-      );
-      const data: RAuthResponse = await response.json();
-      
-      if (data.token) {
-        localStorage.setItem(STORAGE_KEYS.R_AUTH_TOKEN, data.token);
-        setRAuthToken(data.token);
-        return data.token;
+      const token = await getLocalRAuthToken();
+      if (token) {
+        localStorage.setItem(STORAGE_KEYS.R_AUTH_TOKEN, token);
+        setRAuthToken(token);
+        return token;
       }
       return null;
     } catch (err) {
