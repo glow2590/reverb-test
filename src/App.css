@@ -1,0 +1,11 @@
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.app {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  padding: 20px 0;
+}
