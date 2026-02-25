@@ -40,7 +40,6 @@ import { getClientDataFromCookies } from './helpers'
 
 
 export async function getRAuthToken(
-  deviceIdentifier?: string,
   sn?: string,
   timestamp?: string,
   deviceModel?: string,
@@ -50,12 +49,11 @@ export async function getRAuthToken(
   const clientData = await getClientDataFromCookies()
 
   const {
-    fingerprint,
     deviceModel: clientDeviceModel,
     os: clientOs,
   } = clientData ?? {}
 
-  const finalDeviceIdentifier = `web-fingerprint-${fingerprint ? fingerprint : deviceIdentifier || 'fb9cd3a645fe5jim'}`
+  const finalDeviceIdentifier = `web-fingerprint-08b8ca423845e80b2d3e1c330172e6ce-dev`
 
   const finalSn = sn || `sn-85845426`
 
